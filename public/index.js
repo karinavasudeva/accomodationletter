@@ -19,14 +19,14 @@ document.getElementById('letterForm').addEventListener('submit', async (e) => {
 
         console.log('Fetch response received:', response);
 
-        if (!response.ok) {
-            const errorText = await response.text();
-            console.error('Response not OK. Status:', response.status, 'Text:', errorText);
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
         const data = await response.json();
         console.log('Received data:', data);
+
+        // Log debug information
+        if (data.debugLog) {
+            console.log('Debug log:');
+            data.debugLog.forEach(log => console.log(log));
+        }
 
         if (Array.isArray(data.accommodations)) {
             document.getElementById('accommodationsList').innerHTML = '<ul>' + 
