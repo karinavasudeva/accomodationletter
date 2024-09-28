@@ -32,6 +32,7 @@ async function generateAccommodations(disability, context) {
                 Provide your response as a JSON array of exactly 10 objects, where each object has a single key "accommodation" with a string value describing one accommodation.`;
 
   try {
+    console.log('Sending request to Anthropic API...');
     const response = await axios.post(url, {
       model: "claude-3-haiku-20240307",
       max_tokens: 300,
@@ -43,7 +44,10 @@ async function generateAccommodations(disability, context) {
       ]
     }, { headers });
 
+    console.log('Response received from Anthropic API');
     let content = response.data.content[0].text;
+    console.log('Raw API response:', content);
+
     const suggestedAccommodations = JSON.parse(content);
     if (Array.isArray(suggestedAccommodations)) {
       return suggestedAccommodations.map(item => item.accommodation || 'No accommodation provided');
@@ -91,38 +95,37 @@ Sincerely,
 
 module.exports = async (req, res) => {
   console.log('API route called');
-  if (req.method === 'POST') {
-    try {
-      console.log('Request body:', req.body);
-      const { name, disability, context } = req.body;
-      if (!name || !disability || !context) {
-        console.log('Missing required fields');
-        return res.status(400).json({ error: 'Missing required fields' });
-      }
-      
-      if (!process.env.ANTHROPIC_API_KEY) {
-        console.log('Anthropic API key is not set');
-        return res.status(500).json({ error: 'Anthropic API key is not set' });
-      }
-      
-      console.log('Generating accommodations...');
-      const accommodations = await generateAccommodations(disability, context);
-      console.log('Accommodations generated:', accommodations);
-      
-      console.log('Generating letter...');
-      const letter = generateAccommodationLetter(name, disability, accommodations, context);
-      console.log('Letter generated');
-      
-      res.status(200).json({ letter, accommodations });
-    } catch (error) {
-      console.error('An error occurred:', error);
-      res.status(500).json({ 
-        error: 'An error occurred', 
-        details: error.message
-      });
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method Not Allowed' });
+  }
+
+  try {
+    console.log('Request body:', req.body);
+    const { name, disability, context } = req.body;
+    if (!name || !disability || !context) {
+      console.log('Missing required fields');
+      return res.status(400).json({ error: 'Missing required fields' });
     }
-  } else {
-    res.setHeader('Allow', ['POST']);
-    res.status(405).end(`Method ${req.method} Not Allowed`);
+    
+    if (!process.env.ANTHROPIC_API_KEY) {
+      console.log('Anthropic API key is not set');
+      return res.status(500).json({ error: 'Anthropic API key is not set' });
+    }
+    
+    console.log('Generating accommodations...');
+    const accommodations = await generateAccommodations(disability, context);
+    console.log('Accommodations generated:', accommodations);
+    
+    console.log('Generating letter...');
+    const letter = generateAccommodationLetter(name, disability, accommodations, context);
+    console.log('Letter generated');
+    
+    res.status(200).json({ letter, accommodations });
+  } catch (error) {
+    console.error('An error occurred:', error);
+    res.status(500).json({ 
+      error: 'An internal server error occurred',
+      details: error.message
+    });
   }
 };

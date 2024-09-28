@@ -159,29 +159,34 @@
         const letterForm = document.getElementById('letterForm');
         const letterOutput = document.getElementById('letterOutput');
         const accommodationsList = document.getElementById('accommodationsList');
-
+    
         letterForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             const name = document.getElementById('name').value;
             const disability = document.getElementById('disability').value;
             const context = document.getElementById('context').value;
-
+    
             try {
                 const response = await fetch('/api/generate-letter', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ name, disability, context })
                 });
-
+    
+                const contentType = response.headers.get("content-type");
+                if (!contentType || !contentType.includes("application/json")) {
+                    throw new Error("Oops, we haven't received a JSON response from the server.");
+                }
+    
                 const result = await response.json();
-                if (response.ok) {
-                    letterOutput.textContent = result.letter;
-                    accommodationsList.innerHTML = '<ul>' + 
-                        result.accommodations.map(acc => `<li>${acc}</li>`).join('') + 
-                        '</ul>';
-                } else {
+                if (!response.ok) {
                     throw new Error(result.error || 'An unknown error occurred');
                 }
+    
+                letterOutput.textContent = result.letter;
+                accommodationsList.innerHTML = '<ul>' + 
+                    result.accommodations.map(acc => `<li>${acc}</li>`).join('') + 
+                    '</ul>';
             } catch (error) {
                 console.error('Error:', error);
                 alert(`Error: ${error.message}`);
