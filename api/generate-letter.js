@@ -35,7 +35,7 @@ async function generateAccommodations(disability, context) {
     console.log('Sending request to Anthropic API...');
     const response = await axios.post(url, {
       model: "claude-3-haiku-20240307",
-      max_tokens: 300,
+      max_tokens: 1000,
       messages: [
         {
           role: "user",
@@ -125,7 +125,8 @@ module.exports = async (req, res) => {
     console.error('An error occurred:', error);
     res.status(500).json({ 
       error: 'An internal server error occurred',
-      details: error.message
+      details: error.message,
+      stack: process.env.NODE_ENV === 'production' ? '🥞' : error.stack
     });
   }
 };
