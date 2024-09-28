@@ -1,7 +1,7 @@
 const axios = require('axios');
 
 async function generateAccommodations(disability, context) {
-  console.log('Generating accommodations for:', { disability, context });
+  console.log('Entering generateAccommodations function');
   const anthropicApiKey = process.env.ANTHROPIC_API_KEY;
   const url = 'https://api.anthropic.com/v1/messages';
   
@@ -55,7 +55,7 @@ async function generateAccommodations(disability, context) {
 
     console.log('Response received from Anthropic API');
     console.log('Response status:', response.status);
-    console.log('Response headers:', response.headers);
+    console.log('Response headers:', JSON.stringify(response.headers, null, 2));
     
     let content = response.data.content[0].text;
     console.log('Raw API response:', content);
@@ -64,12 +64,16 @@ async function generateAccommodations(disability, context) {
     const jsonMatch = content.match(/\[[\s\S]*\]/);
     if (jsonMatch) {
       content = jsonMatch[0];
+      console.log('Extracted JSON:', content);
+    } else {
+      console.log('No JSON array found in the response');
     }
 
     // Attempt to parse the JSON response
     let suggestedAccommodations;
     try {
       suggestedAccommodations = JSON.parse(content);
+      console.log('Parsed accommodations:', suggestedAccommodations);
     } catch (parseError) {
       console.error('Error parsing JSON:', parseError);
       console.error('Raw content:', content);
@@ -83,19 +87,22 @@ async function generateAccommodations(disability, context) {
         .filter(item => item !== null);
       if (accommodations.length > 0) {
         suggestedAccommodations = accommodations;
+        console.log('Extracted accommodations:', suggestedAccommodations);
       } else {
         throw new Error('Failed to parse API response as JSON and couldn\'t extract accommodations');
       }
     }
 
     if (Array.isArray(suggestedAccommodations) && suggestedAccommodations.length > 0) {
-      return suggestedAccommodations.map(item => item.accommodation || 'No accommodation provided');
+      const result = suggestedAccommodations.map(item => item.accommodation || 'No accommodation provided');
+      console.log('Final accommodations:', result);
+      return result;
     } else {
       console.error('Unexpected response format:', suggestedAccommodations);
       throw new Error('API response is not in the expected format (array of accommodation objects)');
     }
   } catch (error) {
-    console.error('Error generating accommodations:', error);
+    console.error('Error in generateAccommodations:', error);
     if (error.response) {
       console.error('Error response:', error.response.data);
     }
@@ -104,9 +111,10 @@ async function generateAccommodations(disability, context) {
 }
 
 function generateAccommodationLetter(name, disability, accommodations, context) {
+  console.log('Generating letter with:', { name, disability, context, accommodations });
   const date = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
   
-  return `
+  const letter = `
 ${date}
 
 To Whom It May Concern:
@@ -134,6 +142,9 @@ Sincerely,
 [Your Institution/Organization]
 [Contact Information]
 `.trim();
+
+  console.log('Generated letter:', letter);
+  return letter;
 }
 
 module.exports = async (req, res) => {
