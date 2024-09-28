@@ -142,6 +142,7 @@ module.exports = async (req, res) => {
     res.status(200).json({ letter, accommodations });
   } catch (error) {
     console.error('An error occurred:', error);
+    console.error('Error stack:', error.stack);
     res.status(500).json({ 
       error: 'An internal server error occurred',
       details: error.message,
