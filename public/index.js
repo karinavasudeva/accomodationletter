@@ -5,7 +5,7 @@ document.getElementById('letterForm').addEventListener('submit', async (e) => {
     const context = document.getElementById('context').value;
 
     try {
-        const response = await fetch('/generate-letter', {
+        const response = await fetch('/api/generate-letter', {  // Updated this line
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -18,7 +18,7 @@ document.getElementById('letterForm').addEventListener('submit', async (e) => {
         }
 
         const data = await response.json();
-        console.log('Received data:', data); // Add this line for debugging
+        console.log('Received data:', data);
 
         if (Array.isArray(data.accommodations)) {
             document.getElementById('accommodationsList').innerHTML = '<ul>' + 
@@ -40,6 +40,5 @@ document.getElementById('letterForm').addEventListener('submit', async (e) => {
     }
 });
 
-
-// This file might be importing and running your server
-const server = require('./server');
+// Remove this line as it's not needed for Vercel deployment
+// const server = require('./server');
