@@ -1,44 +1,4 @@
-const express = require('express');
-const bodyParser = require('body-parser');
 const axios = require('axios');
-const path = require('path');
-require('dotenv').config();
-
-const app = express();
-
-console.log('ANTHROPIC_API_KEY:', process.env.ANTHROPIC_API_KEY ? `${process.env.ANTHROPIC_API_KEY.substr(0, 5)}...` : 'Not set');
-
-app.use(bodyParser.urlencoded({ extended: false }));
-app.use(bodyParser.json());
-app.use(express.static('public'));
-
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
-});
-
-app.post('/generate-letter', async (req, res) => {
-  try {
-    const { name, disability, context } = req.body;
-    if (!name || !disability || !context) {
-      return res.status(400).json({ error: 'Missing required fields' });
-    }
-    
-    if (!process.env.ANTHROPIC_API_KEY) {
-      return res.status(500).json({ error: 'Anthropic API key is not set' });
-    }
-    
-    const accommodations = await generateAccommodations(disability, context);
-    const letter = generateAccommodationLetter(name, disability, accommodations, context);
-    res.json({ letter, accommodations });
-  } catch (error) {
-    console.error('An error occurred:', error);
-    res.status(500).json({ 
-      error: 'An error occurred', 
-      details: error.message,
-      stack: process.env.NODE_ENV === 'production' ? '🥞' : error.stack
-    });
-  }
-});
 
 async function generateAccommodations(disability, context) {
   const anthropicApiKey = process.env.ANTHROPIC_API_KEY;
@@ -103,7 +63,6 @@ async function generateAccommodations(disability, context) {
     try {
       const suggestedAccommodations = JSON.parse(content);
       if (Array.isArray(suggestedAccommodations)) {
-        // Extract the 'accommodation' value from each object
         return suggestedAccommodations.map(item => item.accommodation || 'No accommodation provided');
       } else {
         console.error('API response is not an array:', suggestedAccommodations);
@@ -113,7 +72,6 @@ async function generateAccommodations(disability, context) {
       console.error('Error parsing JSON:', parseError);
       console.error('Processed content:', content);
       
-      // Fallback parsing method
       const suggestions = content.match(/"accommodation"\s*:\s*"([^"]*)"/g);
       if (suggestions && suggestions.length > 0) {
         return suggestions.map(suggestion => 
@@ -162,10 +120,33 @@ Sincerely,
 `.trim();
 }
 
-const port = process.env.PORT || 3000;
+module.exports = async (req, res) => {
+  console.log('ANTHROPIC_API_KEY:', process.env.ANTHROPIC_API_KEY ? `${process.env.ANTHROPIC_API_KEY.substr(0, 5)}...` : 'Not set');
 
-app.listen(port, () => {
-  console.log(`Server is running on port ${port}`);
-});
-
-module.exports = app;
+  if (req.method === 'POST') {
+    try {
+      const { name, disability, context } = req.body;
+      if (!name || !disability || !context) {
+        return res.status(400).json({ error: 'Missing required fields' });
+      }
+      
+      if (!process.env.ANTHROPIC_API_KEY) {
+        return res.status(500).json({ error: 'Anthropic API key is not set' });
+      }
+      
+      const accommodations = await generateAccommodations(disability, context);
+      const letter = generateAccommodationLetter(name, disability, accommodations, context);
+      res.status(200).json({ letter, accommodations });
+    } catch (error) {
+      console.error('An error occurred:', error);
+      res.status(500).json({ 
+        error: 'An error occurred', 
+        details: error.message,
+        stack: process.env.NODE_ENV === 'production' ? '🥞' : error.stack
+      });
+    }
+  } else {
+    res.setHeader('Allow', ['POST']);
+    res.status(405).end(`Method ${req.method} Not Allowed`);
+  }
+};
