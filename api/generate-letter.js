@@ -114,4 +114,41 @@ module.exports = async (req, res) => {
     res.setHeader('Allow', ['POST']);
     res.status(405).end(`Method ${req.method} Not Allowed`);
   }
+
+module.exports = async (req, res) => {
+  console.log('API route called');
+  if (req.method === 'POST') {
+    try {
+      console.log('Request body:', req.body);
+      const { name, disability, context } = req.body;
+      if (!name || !disability || !context) {
+        console.log('Missing required fields');
+        return res.status(400).json({ error: 'Missing required fields' });
+      }
+      
+      if (!process.env.ANTHROPIC_API_KEY) {
+        console.log('Anthropic API key is not set');
+        return res.status(500).json({ error: 'Anthropic API key is not set' });
+      }
+      
+      console.log('Generating accommodations...');
+      const accommodations = await generateAccommodations(disability, context);
+      console.log('Accommodations generated:', accommodations);
+      
+      console.log('Generating letter...');
+      const letter = generateAccommodationLetter(name, disability, accommodations, context);
+      console.log('Letter generated');
+      
+      res.status(200).json({ letter, accommodations });
+    } catch (error) {
+      console.error('An error occurred:', error);
+      res.status(500).json({ 
+        error: 'An error occurred', 
+        details: error.message
+      });
+    }
+  } else {
+    res.setHeader('Allow', ['POST']);
+    res.status(405).end(`Method ${req.method} Not Allowed`);
+  }
 };
