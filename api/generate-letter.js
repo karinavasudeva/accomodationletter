@@ -38,7 +38,7 @@ async function generateAccommodations(disability, context) {
                   ... (8 more objects)
                 ]
 
-                Ensure your response contains only this JSON array and no other text.`;
+                Ensure your response contains only this JSON array and no other text. Do not include any explanations, notes, or additional text outside of the JSON array.`;
 
   try {
     console.log('Sending request to Anthropic API...');
@@ -54,8 +54,17 @@ async function generateAccommodations(disability, context) {
     }, { headers });
 
     console.log('Response received from Anthropic API');
+    console.log('Response status:', response.status);
+    console.log('Response headers:', response.headers);
+    
     let content = response.data.content[0].text;
     console.log('Raw API response:', content);
+
+    // Attempt to extract JSON array from the response
+    const jsonMatch = content.match(/\[[\s\S]*\]/);
+    if (jsonMatch) {
+      content = jsonMatch[0];
+    }
 
     // Attempt to parse the JSON response
     let suggestedAccommodations;
@@ -64,17 +73,32 @@ async function generateAccommodations(disability, context) {
     } catch (parseError) {
       console.error('Error parsing JSON:', parseError);
       console.error('Raw content:', content);
-      throw new Error('Failed to parse API response as JSON');
+      // If parsing fails, attempt to create a valid JSON array from the content
+      const accommodations = content.split('\n')
+        .filter(line => line.trim().startsWith('"accommodation":'))
+        .map(line => {
+          const match = line.match(/"accommodation":\s*"([^"]*)"/);
+          return match ? { accommodation: match[1] } : null;
+        })
+        .filter(item => item !== null);
+      if (accommodations.length > 0) {
+        suggestedAccommodations = accommodations;
+      } else {
+        throw new Error('Failed to parse API response as JSON and couldn\'t extract accommodations');
+      }
     }
 
-    if (Array.isArray(suggestedAccommodations) && suggestedAccommodations.length === 10) {
+    if (Array.isArray(suggestedAccommodations) && suggestedAccommodations.length > 0) {
       return suggestedAccommodations.map(item => item.accommodation || 'No accommodation provided');
     } else {
       console.error('Unexpected response format:', suggestedAccommodations);
-      throw new Error('API response is not in the expected format (array of 10 items)');
+      throw new Error('API response is not in the expected format (array of accommodation objects)');
     }
   } catch (error) {
     console.error('Error generating accommodations:', error);
+    if (error.response) {
+      console.error('Error response:', error.response.data);
+    }
     throw error;
   }
 }
