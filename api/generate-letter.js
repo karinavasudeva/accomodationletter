@@ -1,6 +1,7 @@
 const axios = require('axios');
 
 async function generateAccommodations(disability, context) {
+  console.log('Generating accommodations for:', { disability, context });
   const anthropicApiKey = process.env.ANTHROPIC_API_KEY;
   const url = 'https://api.anthropic.com/v1/messages';
   
@@ -87,33 +88,6 @@ Sincerely,
 [Contact Information]
 `.trim();
 }
-
-module.exports = async (req, res) => {
-  if (req.method === 'POST') {
-    try {
-      const { name, disability, context } = req.body;
-      if (!name || !disability || !context) {
-        return res.status(400).json({ error: 'Missing required fields' });
-      }
-      
-      if (!process.env.ANTHROPIC_API_KEY) {
-        return res.status(500).json({ error: 'Anthropic API key is not set' });
-      }
-      
-      const accommodations = await generateAccommodations(disability, context);
-      const letter = generateAccommodationLetter(name, disability, accommodations, context);
-      res.status(200).json({ letter, accommodations });
-    } catch (error) {
-      console.error('An error occurred:', error);
-      res.status(500).json({ 
-        error: 'An error occurred', 
-        details: error.message
-      });
-    }
-  } else {
-    res.setHeader('Allow', ['POST']);
-    res.status(405).end(`Method ${req.method} Not Allowed`);
-  }
 
 module.exports = async (req, res) => {
   console.log('API route called');

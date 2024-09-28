@@ -95,8 +95,7 @@
             left: 0;
             top: -5px;
         }
-
-         #letterOutput {
+        #letterOutput {
             background-color: white;
             padding: 30px;
             margin-top: 20px;
@@ -108,11 +107,9 @@
             margin-left: auto;
             margin-right: auto;
         }
-
-          #letterOutput::first-line {
+        #letterOutput::first-line {
             font-weight: bold;
         }
-
         @media print {
             body * {
                 visibility: hidden;
@@ -126,7 +123,6 @@
                 top: 0;
             }
         }
-         
     </style>
 </head>
 <body>
@@ -170,23 +166,29 @@
             const disability = document.getElementById('disability').value;
             const context = document.getElementById('context').value;
 
-            const response = await fetch('/generate-letter', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name, disability, context })
-            });
+            try {
+                const response = await fetch('/api/generate-letter', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, disability, context })
+                });
 
-            const result = await response.json();
-            if (response.ok) {
-                letterOutput.textContent = result.letter;
-                accommodationsList.innerHTML = '<ul>' + 
-                    result.accommodations.map(acc => `<li>${acc}</li>`).join('') + 
-                    '</ul>';
-            } else {
-                alert(`Error: ${result.error}`);
+                const result = await response.json();
+                if (response.ok) {
+                    letterOutput.textContent = result.letter;
+                    accommodationsList.innerHTML = '<ul>' + 
+                        result.accommodations.map(acc => `<li>${acc}</li>`).join('') + 
+                        '</ul>';
+                } else {
+                    throw new Error(result.error || 'An unknown error occurred');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert(`Error: ${error.message}`);
+                letterOutput.textContent = 'An error occurred while generating the letter.';
+                accommodationsList.textContent = 'An error occurred while generating accommodations.';
             }
         });
     </script>
-</div>
 </body>
 </html>

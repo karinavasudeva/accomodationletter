@@ -1,10 +1,14 @@
 document.getElementById('letterForm').addEventListener('submit', async (e) => {
     e.preventDefault();
+    console.log('Form submitted');
     const name = document.getElementById('name').value;
     const disability = document.getElementById('disability').value;
     const context = document.getElementById('context').value;
 
+    console.log('Form data:', { name, disability, context });
+
     try {
+        console.log('Sending fetch request...');
         const response = await fetch('/api/generate-letter', {
             method: 'POST',
             headers: {
@@ -12,6 +16,8 @@ document.getElementById('letterForm').addEventListener('submit', async (e) => {
             },
             body: JSON.stringify({ name, disability, context })
         });
+
+        console.log('Fetch response received:', response);
 
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
@@ -39,6 +45,3 @@ document.getElementById('letterForm').addEventListener('submit', async (e) => {
         document.getElementById('accommodationsList').textContent = 'An error occurred while generating accommodations.';
     }
 });
-
-// Remove or comment out this line as it's not needed for client-side code
-// const server = require('./server');
