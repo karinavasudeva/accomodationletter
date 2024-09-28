@@ -29,7 +29,16 @@ async function generateAccommodations(disability, context) {
 
                 Avoid generic, potentially stigmatizing, or personal advice suggestions. Be extensive. Ensure accommodations are appropriate for being requested from an institution.
 
-                Provide your response as a JSON array of exactly 10 objects, where each object has a single key "accommodation" with a string value describing one accommodation.`;
+                IMPORTANT: Provide your response as a valid JSON array of exactly 10 objects. Each object should have a single key "accommodation" with a string value describing one accommodation. The entire response should be parseable by JSON.parse().
+
+                Example of the expected format:
+                [
+                  {"accommodation": "Provide access to a quiet, distraction-reduced testing environment for exams and assessments."},
+                  {"accommodation": "Allow the use of noise-cancelling headphones or earplugs during lectures and study sessions to reduce auditory distractions."},
+                  ... (8 more objects)
+                ]
+
+                Ensure your response contains only this JSON array and no other text.`;
 
   try {
     console.log('Sending request to Anthropic API...');
@@ -48,11 +57,21 @@ async function generateAccommodations(disability, context) {
     let content = response.data.content[0].text;
     console.log('Raw API response:', content);
 
-    const suggestedAccommodations = JSON.parse(content);
-    if (Array.isArray(suggestedAccommodations)) {
+    // Attempt to parse the JSON response
+    let suggestedAccommodations;
+    try {
+      suggestedAccommodations = JSON.parse(content);
+    } catch (parseError) {
+      console.error('Error parsing JSON:', parseError);
+      console.error('Raw content:', content);
+      throw new Error('Failed to parse API response as JSON');
+    }
+
+    if (Array.isArray(suggestedAccommodations) && suggestedAccommodations.length === 10) {
       return suggestedAccommodations.map(item => item.accommodation || 'No accommodation provided');
     } else {
-      throw new Error('API response is not in the expected format');
+      console.error('Unexpected response format:', suggestedAccommodations);
+      throw new Error('API response is not in the expected format (array of 10 items)');
     }
   } catch (error) {
     console.error('Error generating accommodations:', error);
