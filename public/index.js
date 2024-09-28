@@ -20,6 +20,8 @@ document.getElementById('letterForm').addEventListener('submit', async (e) => {
         console.log('Fetch response received:', response);
 
         if (!response.ok) {
+            const errorText = await response.text();
+            console.error('Response not OK. Status:', response.status, 'Text:', errorText);
             throw new Error(`HTTP error! status: ${response.status}`);
         }
 
@@ -31,17 +33,23 @@ document.getElementById('letterForm').addEventListener('submit', async (e) => {
                 data.accommodations.map(acc => `<li>${acc}</li>`).join('') + 
                 '</ul>';
         } else {
+            console.error('Accommodations data is not an array:', data.accommodations);
             document.getElementById('accommodationsList').textContent = 'Error: Accommodations data is not in the expected format.';
         }
 
         if (typeof data.letter === 'string') {
             document.getElementById('letterOutput').textContent = data.letter;
         } else {
+            console.error('Letter data is not a string:', data.letter);
             document.getElementById('letterOutput').textContent = 'Error: Letter data is not in the expected format.';
         }
     } catch (error) {
-        console.error('An error occurred:', error);
+        console.error('Detailed error:', error);
+        console.error('Error name:', error.name);
+        console.error('Error message:', error.message);
+        console.error('Error stack:', error.stack);
         document.getElementById('letterOutput').textContent = 'An error occurred while generating the letter.';
         document.getElementById('accommodationsList').textContent = 'An error occurred while generating accommodations.';
+        alert(`An error occurred: ${error.message}`);
     }
 });
