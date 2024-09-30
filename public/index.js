@@ -1,24 +1,11 @@
-document.addEventListener('DOMContentLoaded', () => {
-    const form = document.getElementById('letterForm');
-    if (form) {
-        form.addEventListener('submit', handleSubmit);
-    } else {
-        console.error('Form element not found');
-    }
-});
-
-async function handleSubmit(e) {
+document.getElementById('letterForm').addEventListener('submit', async (e) => {
     e.preventDefault();
-    console.log('Form submitted');
     const name = document.getElementById('name').value;
     const disability = document.getElementById('disability').value;
     const context = document.getElementById('context').value;
 
-    console.log('Form data:', { name, disability, context });
-
     try {
-        console.log('Sending fetch request...');
-        const response = await fetch('/api/generate-letter', {
+        const response = await fetch('/generate-letter', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -26,43 +13,33 @@ async function handleSubmit(e) {
             body: JSON.stringify({ name, disability, context })
         });
 
-        console.log('Fetch response received:', response);
-
         if (!response.ok) {
-            const errorText = await response.text();
-            console.error('Response not OK. Status:', response.status, 'Text:', errorText);
             throw new Error(`HTTP error! status: ${response.status}`);
         }
 
         const data = await response.json();
-        console.log('Received data:', data);
+        console.log('Received data:', data); // Add this line for debugging
 
-        updateAccommodationsList(data.accommodations);
-        updateLetterOutput(data.letter);
+        if (Array.isArray(data.accommodations)) {
+            document.getElementById('accommodationsList').innerHTML = '<ul>' + 
+                data.accommodations.map(acc => `<li>${acc}</li>`).join('') + 
+                '</ul>';
+        } else {
+            document.getElementById('accommodationsList').textContent = 'Error: Accommodations data is not in the expected format.';
+        }
+
+        if (typeof data.letter === 'string') {
+            document.getElementById('letterOutput').textContent = data.letter;
+        } else {
+            document.getElementById('letterOutput').textContent = 'Error: Letter data is not in the expected format.';
+        }
     } catch (error) {
-        console.error('Error:', error);
-        updateAccommodationsList(['An error occurred while generating accommodations.']);
-        updateLetterOutput('An error occurred while generating the letter.');
-        alert(`An error occurred: ${error.message}`);
+        console.error('An error occurred:', error);
+        document.getElementById('letterOutput').textContent = 'An error occurred while generating the letter.';
+        document.getElementById('accommodationsList').textContent = 'An error occurred while generating accommodations.';
     }
-}
+});
 
-function updateAccommodationsList(accommodations) {
-    const accommodationsList = document.getElementById('accommodationsList');
-    if (Array.isArray(accommodations)) {
-        accommodationsList.innerHTML = '<ul>' + 
-            accommodations.map(acc => `<li>${acc}</li>`).join('') + 
-            '</ul>';
-    } else {
-        accommodationsList.textContent = 'Error: Accommodations data is not in the expected format.';
-    }
-}
 
-function updateLetterOutput(letter) {
-    const letterOutput = document.getElementById('letterOutput');
-    if (typeof letter === 'string') {
-        letterOutput.textContent = letter;
-    } else {
-        letterOutput.textContent = 'Error: Letter data is not in the expected format.';
-    }
-}
+// This file might be importing and running your server
+const server = require('./server');

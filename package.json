@@ -1,17 +1,19 @@
 {
-  "name": "accommodation-generator",
+  "name": "accomodation-generator",
   "version": "1.0.0",
-  "description": "Accommodation letter generator using Claude API",
+  "description": "",
   "main": "index.js",
   "scripts": {
+    "start": "node server.js",
     "dev": "vercel dev",
     "deploy": "vercel deploy --prod"
   },
   "dependencies": {
-    "axios": "^0.21.1"
+    "axios": "^0.21.1",
+    "dotenv": "^10.0.0",
+    "express": "^4.17.1"
   },
   "devDependencies": {
-    "dotenv": "^10.0.0",
     "vercel": "^24.0.0"
   }
 }
