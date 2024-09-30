@@ -121,32 +121,47 @@ Sincerely,
 }
 
 module.exports = async (req, res) => {
-  console.log('ANTHROPIC_API_KEY:', process.env.ANTHROPIC_API_KEY ? `${process.env.ANTHROPIC_API_KEY.substr(0, 5)}...` : 'Not set');
+  console.log('API route called');
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
-  if (req.method === 'POST') {
-    try {
-      const { name, disability, context } = req.body;
-      if (!name || !disability || !context) {
-        return res.status(400).json({ error: 'Missing required fields' });
-      }
-      
-      if (!process.env.ANTHROPIC_API_KEY) {
-        return res.status(500).json({ error: 'Anthropic API key is not set' });
-      }
-      
-      const accommodations = await generateAccommodations(disability, context);
-      const letter = generateAccommodationLetter(name, disability, accommodations, context);
-      res.status(200).json({ letter, accommodations });
-    } catch (error) {
-      console.error('An error occurred:', error);
-      res.status(500).json({ 
-        error: 'An error occurred', 
-        details: error.message,
-        stack: process.env.NODE_ENV === 'production' ? '🥞' : error.stack
-      });
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method Not Allowed' });
+  }
+
+  try {
+    console.log('Request body:', req.body);
+    const { name, disability, context } = req.body;
+    if (!name || !disability || !context) {
+      console.log('Missing required fields');
+      return res.status(400).json({ error: 'Missing required fields' });
     }
-  } else {
-    res.setHeader('Allow', ['POST']);
-    res.status(405).end(`Method ${req.method} Not Allowed`);
+    
+    if (!process.env.ANTHROPIC_API_KEY) {
+      console.log('Anthropic API key is not set');
+      return res.status(500).json({ error: 'Anthropic API key is not set' });
+    }
+    
+    console.log('Generating accommodations...');
+    const accommodations = await generateAccommodations(disability, context);
+    console.log('Accommodations generated:', accommodations);
+    
+    console.log('Generating letter...');
+    const letter = generateAccommodationLetter(name, disability, accommodations, context);
+    console.log('Letter generated');
+    
+    res.status(200).json({ letter, accommodations });
+  } catch (error) {
+    console.error('An error occurred:', error);
+    res.status(500).json({ 
+      error: 'An internal server error occurred',
+      details: error.message,
+      stack: process.env.NODE_ENV === 'production' ? '🥞' : error.stack
+    });
   }
 };
